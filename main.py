@@ -12,7 +12,7 @@ from data.preprocess import tokenize_texts
 from infer.model import load_model, load_tokenizer
 from infer.hook import ActivationStatsHook
 from analyze.stats import compute_outliers
-from analyze.viz import plot_heatmap, plot_overlap_matrix
+from analyze.viz import plot_architecture_heatmap, plot_spearman_by_depth, plot_magnitude_scatter
 from verify.compare import compare_domains
 
 DOMAINS = sorted(DOMAIN_CONFIG.keys())
@@ -234,10 +234,10 @@ def main():
     print(f"\nResults saved to {csv_path}")
 
     # ── plotting ──
-    sample_layers = list(next(iter(all_outliers.values())).keys())[:10]
     plots_dir = runner.plots_dir()
-    plot_heatmap(all_outliers, sample_layers, save_dir=plots_dir)
-    plot_overlap_matrix(all_outliers, sample_layers, save_dir=plots_dir)
+    plot_architecture_heatmap(all_results, save_dir=plots_dir)
+    plot_spearman_by_depth(all_results, save_dir=plots_dir)
+    plot_magnitude_scatter(all_outliers, save_dir=plots_dir)
     print(f"Plots saved to {plots_dir}/")
 
     # ── summary ──
