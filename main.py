@@ -19,6 +19,14 @@ DOMAINS = sorted(DOMAIN_CONFIG.keys())
 PERSIST_KEYS = ["model", "max_samples", "batch_size", "seq_len", "top_k_pct"]
 
 
+def _layer_sort_key(layer_name):
+    parts = layer_name.split(".")
+    for p in parts:
+        if p.isdigit():
+            return (int(p), layer_name)
+    return (-1, layer_name)
+
+
 class RunManager:
     def __init__(self, base_dir="runs"):
         self.base_dir = base_dir
@@ -221,7 +229,7 @@ def main():
         w = csv.writer(f)
         w.writerow(["domain_1", "domain_2", "layer", "overlap", "jaccard", "spearman"])
         for (d1, d2), results in sorted(all_results.items()):
-            for layer, m in sorted(results.items()):
+            for layer, m in sorted(results.items(), key=lambda x: _layer_sort_key(x[0])):
                 w.writerow([d1, d2, layer, f"{m['overlap']:.3f}", f"{m['jaccard']:.3f}", f"{m['spearman']:.3f}"])
     print(f"\nResults saved to {csv_path}")
 
@@ -244,10 +252,22 @@ def main():
             spearmans.append(m["spearman"])
 
     if overlaps:
-        print(f"  Mean overlap:  {np.mean(overlaps):.3f}  (goal >0.7)")
-        print(f"  Mean Jaccard:  {np.mean(jaccards):.3f}  (goal >0.6)")
-        print(f"  Mean Spearman: {np.mean(spearmans):.3f}  (goal >0.8)")
-        print(f"  Total layer-pairs compared: {len(overlaps)}")
+        lines = [
+            f"Mean overlap:  {np.mean(overlaps):.3f}  (goal >0.7)",
+            f"Mean Jaccard:  {np.mean(jaccards):.3f}  (goal >0.6)",
+            f"Mean Spearman: {np.mean(spearmans):.3f}  (goal >0.8)",
+            f"Total layer-pairs compared: {len(overlaps)}",
+        ]
+        for line in lines:
+            print(f"  {line}")
+
+        summary_path = os.path.join(runner.run_dir, "summary.txt")
+        with open(summary_path, "w") as f:
+            f.write("Summary\n")
+            f.write("=======\n\n")
+            f.write("\n".join(lines))
+            f.write("\n")
+        print(f"\nSummary saved to {summary_path}")
 
 
 if __name__ == "__main__":
